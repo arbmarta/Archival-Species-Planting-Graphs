@@ -118,3 +118,18 @@ print(intersections_df)
 
 #endregion
 
+# Function to distribute intersecting road names into three new columns
+def distribute_road_names(row):
+    # Split intersecting road names into a list
+    names = row['Intersecting_Road_Names'].split(', ')
+    # Assign the first name to 'Street From', second to 'Street To', and the rest to 'Street Extra'
+    row['Street From'] = names[0] if len(names) > 0 else ''
+    row['Street To'] = names[1] if len(names) > 1 else ''
+    row['Street Extra'] = ', '.join(names[2:]) if len(names) > 2 else ''
+    return row
+
+# Apply the function to each row of the DataFrame and update it
+intersections_df = intersections_df.apply(distribute_road_names, axis=1)
+
+# Print the updated DataFrame with the new columns
+print(intersections_df[['Segment_ID', 'Road_Name', 'Street From', 'Street To', 'Street Extra']])
