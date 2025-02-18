@@ -78,6 +78,36 @@ intersections_df = pd.DataFrame(intersections)
 # Remove rows with no intersecting segments (empty lists)
 intersections_df = intersections_df[intersections_df['Intersecting_Segment_IDs'].apply(lambda x: len(x) > 0)]
 
+# Convert list of intersecting segment IDs and road names to plain text
+intersections_df['Intersecting_Segment_IDs'] = intersections_df['Intersecting_Segment_IDs'].apply(lambda x: ', '.join(map(str, x)))
+intersections_df['Intersecting_Road_Names'] = intersections_df['Intersecting_Road_Names'].apply(lambda x: ', '.join(x))
+
+# Function to filter out road names from the intersecting road names
+def filter_road_names(row):
+    # Split intersecting road names into a list
+    intersecting_names = row['Intersecting_Road_Names'].split(', ')
+    # Filter out the road name that matches the segment's own road name
+    filtered_names = [name for name in intersecting_names if name != row['Road_Name']]
+    # Join the filtered names back into a single string
+    return ', '.join(filtered_names)
+
+# Apply the function to each row of the DataFrame
+intersections_df['Intersecting_Road_Names'] = intersections_df.apply(filter_road_names, axis=1)
+
+# Function to filter out duplicates and the segment's own road name from the intersecting road names
+def filter_road_names(row):
+    # Split intersecting road names into a list
+    intersecting_names = row['Intersecting_Road_Names'].split(', ')
+    # Remove duplicates by converting the list to a set, then back to a list
+    unique_names = list(set(intersecting_names))
+    # Filter out the road name that matches the segment's own road name
+    filtered_names = [name for name in unique_names if name != row['Road_Name']]
+    # Join the filtered names back into a single string
+    return ', '.join(filtered_names)
+
+# Apply the function to each row of the DataFrame
+intersections_df['Intersecting_Road_Names'] = intersections_df.apply(filter_road_names, axis=1)
+
 # Set display options
 pd.set_option('display.max_columns', None)  # Ensure all columns are shown
 pd.set_option('display.max_colwidth', None)  # Display full content of each column
