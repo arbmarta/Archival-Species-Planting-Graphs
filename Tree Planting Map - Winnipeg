@@ -29,8 +29,8 @@ def expand_street_names(name):
 # Apply the function to street names in the road network
 Winnipeg_road_network['Street Name'] = Winnipeg_road_network['full_name'].apply(expand_street_names)
 
+planted_roads = Winnipeg_road_network[Winnipeg_road_network['Street Name'].isin(tree_planting_roads['Street'])]
 
-highlight_roads = Winnipeg_road_network[Winnipeg_road_network['Street Name'].isin(tree_planting_roads['Street'])]
 
 # Plotting
 fig, ax = plt.subplots(figsize=(10, 10))
