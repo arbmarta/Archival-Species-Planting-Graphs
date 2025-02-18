@@ -143,3 +143,9 @@ intersections_df = intersections_df.apply(distribute_road_names, axis=1)
 
 # Print the updated DataFrame to check results
 print(intersections_df[['Segment_ID', 'Road_Name', 'Street From', 'Street To', 'Street Extra']])
+
+# Calculate the number of non-empty rows in the 'Street Extra' column
+non_empty_street_extra_count = intersections_df['Street Extra'].apply(lambda x: x != '').sum()
+
+# Print the result
+print("Number of non-empty rows in 'Street Extra':", non_empty_street_extra_count)
