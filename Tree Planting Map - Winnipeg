@@ -1,0 +1,40 @@
+import geopandas as gpd
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load datasets
+tree_planting_roads = pd.read_excel('Winnipeg Tree Planting map.xlsx')
+Winnipeg_road_network = gpd.read_file('roadway_20250217/geo_export_66b478e7-fd9d-4ef7-96d9-8d13ee6be99a.shp')
+
+# Translation dictionary for street abbreviations
+translation_dict = {
+    'St': 'Street', 'Ave': 'Avenue', 'Dr': 'Drive', 'Cres': 'Crescent',
+    'Rd': 'Road', 'Way': 'Way', 'Bay': 'Bay', 'Path': 'Path', 'Trail': 'Trail',
+    'Lane': 'Lane', 'Blvd': 'Boulevard', 'Pl': 'Place', 'Hwy': 'Highway',
+    'Grove': 'Grove', 'Cove': 'Cove', 'Pt': 'Point', 'Walk': 'Walkway',
+    'Gdn': 'Garden', 'Crt': 'Court', 'Close': 'Close', 'Row': 'Row',
+    'Cir': 'Circle', 'Gate': 'Gate', 'Pk': 'Park', 'Key': 'Key', 'Sq': 'Square',
+    'Pky': 'Parkway', 'Mews': 'Mews', 'Fwy': 'Freeway', 'Prom': 'Promenade',
+    'Terr': 'Terrace', 'Ridge': 'Ridge', 'Common': 'Common', 'Run': 'Run',
+    'Cross': 'Cross', 'Bend': 'Bend', 'Gdns': 'Gardens', 'Alley': 'Alley',
+    'Green': 'Green'
+}
+
+# Function to replace abbreviations in street names
+def expand_street_names(name):
+    for key, value in translation_dict.items():
+        name = name.replace(key, value)
+    return name
+
+# Apply the function to street names in the road network
+Winnipeg_road_network['Street Name'] = Winnipeg_road_network['full_name'].apply(expand_street_names)
+
+
+highlight_roads = Winnipeg_road_network[Winnipeg_road_network['Street Name'].isin(tree_planting_roads['Street'])]
+
+# Plotting
+fig, ax = plt.subplots(figsize=(10, 10))
+Winnipeg_road_network.plot(ax=ax, color='gray')  # plot all roads in gray
+highlight_roads.plot(ax=ax, color='blue', linewidth=2)  # highlight specific roads in blue
+
+plt.show()
