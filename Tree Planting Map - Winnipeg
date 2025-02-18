@@ -1,40 +1,90 @@
+# -------------------------------------------- IMPORT PACKAGES AND DATASETS --------------------------------------------
+#region
 import geopandas as gpd
 import pandas as pd
+from shapely.geometry import Point, LineString
 import matplotlib.pyplot as plt
 
-# Load datasets
-tree_planting_roads = pd.read_excel('Winnipeg Tree Planting map.xlsx')
-Winnipeg_road_network = gpd.read_file('roadway_20250217/geo_export_66b478e7-fd9d-4ef7-96d9-8d13ee6be99a.shp')
+# Load your GeoDataFrame
+gdf = gpd.read_file("roadway_20250217/geo_export_66b478e7-fd9d-4ef7-96d9-8d13ee6be99a.shp")
+print(gdf.columns)
 
-# Translation dictionary for street abbreviations
-translation_dict = {
-    'St': 'Street', 'Ave': 'Avenue', 'Dr': 'Drive', 'Cres': 'Crescent',
-    'Rd': 'Road', 'Way': 'Way', 'Bay': 'Bay', 'Path': 'Path', 'Trail': 'Trail',
-    'Lane': 'Lane', 'Blvd': 'Boulevard', 'Pl': 'Place', 'Hwy': 'Highway',
-    'Grove': 'Grove', 'Cove': 'Cove', 'Pt': 'Point', 'Walk': 'Walkway',
-    'Gdn': 'Garden', 'Crt': 'Court', 'Close': 'Close', 'Row': 'Row',
-    'Cir': 'Circle', 'Gate': 'Gate', 'Pk': 'Park', 'Key': 'Key', 'Sq': 'Square',
-    'Pky': 'Parkway', 'Mews': 'Mews', 'Fwy': 'Freeway', 'Prom': 'Promenade',
-    'Terr': 'Terrace', 'Ridge': 'Ridge', 'Common': 'Common', 'Run': 'Run',
-    'Cross': 'Cross', 'Bend': 'Bend', 'Gdns': 'Gardens', 'Alley': 'Alley',
-    'Green': 'Green'
-}
+# Check if 'segment_id' and 'full_name' are columns; if not, replace with actual column names in your GDF
+if 'segment_id' not in gdf.columns or 'full_name' not in gdf.columns:
+    raise ValueError("Required columns are missing in the GeoDataFrame.")
 
-# Function to replace abbreviations in street names
-def expand_street_names(name):
-    for key, value in translation_dict.items():
-        name = name.replace(key, value)
-    return name
+#endregion
 
-# Apply the function to street names in the road network
-Winnipeg_road_network['Street Name'] = Winnipeg_road_network['full_name'].apply(expand_street_names)
+# ----------------------------------------------- IDENTIFY INTERSECTIONS -----------------------------------------------
+#region
 
-planted_roads = Winnipeg_road_network[Winnipeg_road_network['Street Name'].isin(tree_planting_roads['Street'])]
+# Function to extract points, segment_ids, and full_names from each line feature
+def extract_details(row):
+    # Create a tuple for each coordinate that includes the point, segment_id, and full_name
+    return [(Point(x, y), row['segment_id'], row['full_name']) for (x, y) in row.geometry.coords]
 
+# Apply the function and create a list of tuples
+details = gdf.apply(extract_details, axis=1).explode().reset_index(drop=True)
+points, segment_ids, full_names = zip(*details)  # Unpack points, segment_ids, and full_names into separate lists
 
-# Plotting
-fig, ax = plt.subplots(figsize=(10, 10))
-Winnipeg_road_network.plot(ax=ax, color='gray')  # plot all roads in gray
-highlight_roads.plot(ax=ax, color='blue', linewidth=2)  # highlight specific roads in blue
+# Create a new GeoDataFrame for the points with segment_ids and full_names
+details_gdf = gpd.GeoDataFrame({
+    'geometry': points,
+    'segment_id': segment_ids,
+    'full_name': full_names
+}, crs=gdf.crs)
 
-plt.show()
+# Group by geometry to find unique segment_ids and full_names for each point
+unique_details_per_point = details_gdf.groupby('geometry').agg({
+    'segment_id': lambda x: x.unique(),
+    'full_name': lambda x: x.unique()
+})
+
+# Print the unique segment_ids and full_names for each point
+print(unique_details_per_point)
+
+#endregion
+
+# --------------------=--------------------- LINK INTERSECTIONS TO ROADNETWORK -----------------------------------------
+#region
+
+print(f"LINK INTERSECTIONS TO ROADNETWORK: ")
+
+# Create a spatial index for the GeoDataFrame to optimize intersection queries
+spatial_index = gdf.sindex
+
+# List to store intersections along with their corresponding road names
+intersections = []
+
+# Iterate over each segment in the GeoDataFrame
+for index, segment in gdf.iterrows():
+    # Possible index of intersecting geometries
+    possible_matches_index = list(spatial_index.intersection(segment['geometry'].bounds))
+    # Extract those geometries from the DataFrame
+    possible_matches = gdf.iloc[possible_matches_index]
+    # Check for actual intersection (excluding self-intersection)
+    precise_matches = possible_matches[possible_matches['geometry'].intersects(segment['geometry']) & (possible_matches['segment_id'] != segment['segment_id'])]
+    # Store the results: segment_id, full_name, and the IDs and names of intersecting segments
+    intersections.append({
+        'Segment_ID': segment['segment_id'],
+        'Road_Name': segment['full_name'],
+        'Intersecting_Segment_IDs': list(precise_matches['segment_id']),
+        'Intersecting_Road_Names': list(precise_matches['full_name'])
+    })
+
+# Create a DataFrame from the list of intersections
+intersections_df = pd.DataFrame(intersections)
+
+# Remove rows with no intersecting segments (empty lists)
+intersections_df = intersections_df[intersections_df['Intersecting_Segment_IDs'].apply(lambda x: len(x) > 0)]
+
+# Set display options
+pd.set_option('display.max_columns', None)  # Ensure all columns are shown
+pd.set_option('display.max_colwidth', None)  # Display full content of each column
+pd.set_option('display.width', None)  # Use maximum width for displaying each column
+
+# Print the DataFrame with intersecting segments and their corresponding road names
+print(intersections_df)
+
+#endregion
+
