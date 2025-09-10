@@ -41,15 +41,15 @@ plt.xlim(1945, 1971)
 plt.ylim([0, None])  # Adjusting y limit for better visibility
 
 # Formatting x and y axis labels with increased size and bold font
-plt.xlabel('Year', fontsize=16)
-plt.ylabel('Number of Trees', fontsize=16)
+plt.xlabel('Year', fontsize=16, fontweight='bold')
+plt.ylabel('Number of Trees', fontsize=16, fontweight='bold')
 
 # Adding vertical lines with dots and custom annotations
 important_years = {
-    1946: ("First Year Ash \nare Planted", 1000),
+    1946: ("Six Ash Trees \nPlanted", 1000),
     1949: ("230 Ash Trees \nPlanted", 800),
     1958: ("First Year Ornamental \nSpecies are Planted", 2500),
-    1965: ("Ornamental Species \nDifferentiated", 2300),
+    1960: ("Ornamental Species \nDifferentiated", 2300),
     1966: ("First DED-Resistant \nElm Species Planted", 2000),
     1970: ("49 Siberian \nElm Planted", 1200)
 }
@@ -59,23 +59,23 @@ for year, (text, y_value) in important_years.items():
     plt.plot(year, y_value, 'ko')  # 'ko' means black dot
     if year == 1958:
         # Special case for 1958, align text to the left of the dot
-        plt.annotate(text, xy=(year, y_value), xytext=(-5, 5), textcoords='offset points', fontsize=11,
+        plt.annotate(text, xy=(year, y_value), xytext=(-5, 5), textcoords='offset points', fontsize=13,
                      ha='right')
     elif year == 1970:
         # Special case for 1958, align text to the left of the dot
-        plt.annotate(text, xy=(year, y_value), xytext=(-5, 5), textcoords='offset points', fontsize=11,
+        plt.annotate(text, xy=(year, y_value), xytext=(-5, 5), textcoords='offset points', fontsize=13,
                      ha='right')
     else:
-        plt.annotate(text, xy=(year, y_value), xytext=(5, 5), textcoords='offset points', fontsize=11)
+        plt.annotate(text, xy=(year, y_value), xytext=(5, 5), textcoords='offset points', fontsize=13)
 
 # Configure legend to be inside the plot at the top right
-plt.legend(title='Species Planted', title_fontsize='13', loc='upper left', frameon=True)
+plt.legend(title='Species Planted', title_fontsize=16, fontsize=13, loc='upper left', frameon=True)
 
-plt.tick_params(axis='x', labelsize=12)  # Set x-axis tick label size
-plt.tick_params(axis='y', labelsize=12)  # Set y-axis tick label size
+plt.tick_params(axis='x', labelsize=14)  # Set x-axis tick label size
+plt.tick_params(axis='y', labelsize=14)  # Set y-axis tick label size
 
 # Save the figure
-plt.savefig('Species Planted - Winnipeg.png', dpi=600)
+plt.savefig('Species Planted - Winnipeg.png', dpi=450)
 
 # Display plot
 plt.show()
